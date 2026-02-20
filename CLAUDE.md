@@ -71,3 +71,10 @@ GET    /health            # 健康检查
 
 - 界面实现：- [opcode](https://github.com/winfunc/opcode) 
 本地代码：D:\github\opcode
+
+
+## 项目角色
+
+[前端](docs/提示词/项目前端工程师.md)
+[后台](docs/提示词/项目后台工程师.md)
+[测试](docs/提示词/项目测试工程师.md)

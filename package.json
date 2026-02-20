@@ -4,10 +4,9 @@
   "type": "module",
   "scripts": {
     "install:all": "pnpm install && pnpm run install:python",
-    "install:python": "pip install -r services/agent/requirements.txt",
+    "install:python": "pip install -r services/socratx/requirements.txt",
     "dev": "pnpm --filter @socratx/desktop dev",
     "build": "pnpm --filter @socratx/desktop build",
-    "build:python": "cd services/agent && pyinstaller --onefile --name agent main.py",
     "tauri": "pnpm --filter @socratx/desktop tauri",
     "tauri:dev": "pnpm --filter @socratx/desktop tauri dev",
     "tauri:build": "pnpm --filter @socratx/desktop tauri build"

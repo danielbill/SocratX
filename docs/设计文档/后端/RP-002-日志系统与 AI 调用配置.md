@@ -56,8 +56,8 @@ logger.ai_response(content="你好，我是 SocratX", usage={"total_tokens": 100
 
 ```yaml
 providers:
-  default_provider: "zhipu"  # 智谱 AI
-  zhipu_api_key: "your_api_key"
+  default_provider: "zai"  # 智谱 AI
+  zai_api_key: "your_api_key"
   
 agent:
   model: "glm-4"  # GLM-4.7 对应模型名
@@ -66,7 +66,7 @@ agent:
 ```
 
 #### 2.2 LiteLLM 配置
-LiteLLM 支持智谱 AI，模型名称：`zhipu/glm-4`
+LiteLLM 支持智谱 AI，模型名称：`zai/glm-4`
 
 ### 3. 系统提示注入
 

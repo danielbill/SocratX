@@ -11,14 +11,14 @@ with open(config_path, 'r', encoding='utf-8') as f:
 
 # 保留现有 API Key
 existing_key = ""
-if 'zhipu' in config.get('providers', {}):
-    existing_key = config['providers']['zhipu'].get('api_key', '')
+if 'zai' in config.get('providers', {}):
+    existing_key = config['providers']['zai'].get('api_key', '')
 
 # 更新配置
-config['providers']['zhipu'] = {
+config['providers']['zai'] = {
     'apiKey': existing_key,
     'apiBase': 'https://open.bigmodel.cn/api/paas/v4',
-    'extraHeaders': None
+    'extraHeaders': None,
 }
 
 with open(config_path, 'w', encoding='utf-8') as f:

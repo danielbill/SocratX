@@ -45,8 +45,8 @@ export interface Memory {
 
 export const api = {
   // 聊天
-  async chat(request: ChatRequest): Promise<ChatResponse> {
-    return await invoke<ChatResponse>('chat', {
+  async chat(request: ChatRequest): Promise<string> {
+    return await invoke<string>('chat', {
       message: request.message,
       sessionId: request.session_id || 'default',
       userId: request.user_id || 'default',
@@ -86,17 +86,19 @@ export const api = {
 
   // 获取配置
   async getConfig(): Promise<Record<string, unknown>> {
-    return await invoke<Record<string, unknown>>('get_config');
+    const resp = await invoke<{ config: Record<string, unknown> }>('get_config');
+    return resp.config;
   },
 
   // 更新配置
   async updateConfig(config: Record<string, unknown>): Promise<void> {
-    await invoke('update_config', { config });
+    await invoke('update_config', { updates: config });
   },
 
   // 获取可用工具
   async getTools(): Promise<string[]> {
-    return await invoke<string[]>('get_tools');
+    const resp = await invoke<{ tools: string[] }>('get_tools');
+    return resp.tools;
   },
 };
 

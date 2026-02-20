@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { invoke } from '@tauri-apps/api/core'
-import { Message } from '@/lib/api'
+import { api, Message } from '@/lib/api'
 import ChatMessage from './ChatMessage'
 import ChatInput from './ChatInput'
 import { ScrollArea } from '../ui/scroll-area'
@@ -32,17 +31,17 @@ export default function ChatContainer({ sessionId = 'default' }: ChatContainerPr
     setIsLoading(true)
 
     try {
-      // Call Tauri command
-      const response = await invoke<string>('chat', {
+      // Call API
+      const responseContent = await api.chat({
         message: content,
-        sessionId,
-        userId: 'default',
+        session_id: sessionId,
+        user_id: 'default',
       })
 
       // Add assistant response
       const assistantMessage: Message = {
         role: 'assistant',
-        content: response,
+        content: responseContent,
         timestamp: Date.now(),
       }
       setMessages((prev: Message[]) => [...prev, assistantMessage])

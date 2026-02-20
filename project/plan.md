@@ -19,5 +19,7 @@
     - conversation 记录通话内容
     - ai.log 单独记录云端AI的信息
 
-
+### RP - 003 ：使用一次工具
+- 让AI在d:\下创建一个hello.md，内容 “hello，i am socratx”
+- 让AI在D:\ai_workspace\SocratX\ 下创建一个hello.md，内容 “hello，i am socratx”
 
