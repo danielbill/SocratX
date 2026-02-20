@@ -1,4 +1,4 @@
-"""CLI commands for nanobot."""
+"""CLI commands for SocratX."""
 
 import asyncio
 import os
@@ -18,12 +18,12 @@ from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.patch_stdout import patch_stdout
 
-from nanobot import __version__, __logo__
+from socratx import __version__, __logo__
 from .schema import Config
 
 app = typer.Typer(
-    name="nanobot",
-    help=f"{__logo__} nanobot - Personal AI Assistant",
+    name="SocratX",
+    help=f"{__logo__} SocratX - Personal AI Assistant",
     no_args_is_help=True,
 )
 
@@ -87,7 +87,7 @@ def _init_prompt_session() -> None:
     except Exception:
         pass
 
-    history_file = Path.home() / ".nanobot" / "history" / "cli_history"
+    history_file = Path.home() / ".SocratX" / "history" / "cli_history"
     history_file.parent.mkdir(parents=True, exist_ok=True)
 
     _PROMPT_SESSION = PromptSession(
@@ -102,7 +102,7 @@ def _print_agent_response(response: str, render_markdown: bool) -> None:
     content = response or ""
     body = Markdown(content) if render_markdown else Text(content)
     console.print()
-    console.print(f"[cyan]{__logo__} nanobot[/cyan]")
+    console.print(f"[cyan]{__logo__} SocratX[/cyan]")
     console.print(body)
     console.print()
 
@@ -134,7 +134,7 @@ async def _read_interactive_input_async() -> str:
 
 def version_callback(value: bool):
     if value:
-        console.print(f"{__logo__} nanobot v{__version__}")
+        console.print(f"{__logo__} SocratX v{__version__}")
         raise typer.Exit()
 
 
@@ -144,7 +144,7 @@ def main(
         None, "--version", "-v", callback=version_callback, is_eager=True
     ),
 ):
-    """nanobot - Personal AI Assistant."""
+    """SocratX - Personal AI Assistant."""
     pass
 
 
@@ -155,7 +155,7 @@ def main(
 
 @app.command()
 def onboard():
-    """Initialize nanobot configuration and workspace."""
+    """Initialize SocratX configuration and workspace."""
     from .loader import get_config_path, load_config, save_config
     from .schema import Config
     from .helpers import get_workspace_path
@@ -188,12 +188,12 @@ def onboard():
     # Create default bootstrap files
     _create_workspace_templates(workspace)
     
-    console.print(f"\n{__logo__} nanobot is ready!")
+    console.print(f"\n{__logo__} SocratX is ready!")
     console.print("\nNext steps:")
-    console.print("  1. Add your API key to [cyan]~/.nanobot/config.json[/cyan]")
+    console.print("  1. Add your API key to [cyan]~/.SocratX/config.json[/cyan]")
     console.print("     Get one at: https://openrouter.ai/keys")
-    console.print("  2. Chat: [cyan]nanobot agent -m \"Hello!\"[/cyan]")
-    console.print("\n[dim]Want Telegram/WhatsApp? See: https://github.com/HKUDS/nanobot#-chat-apps[/dim]")
+    console.print("  2. Chat: [cyan]SocratX agent -m \"Hello!\"[/cyan]")
+    console.print("\n[dim]Want Telegram/WhatsApp? See: https://github.com/HKUDS/SocratX#-chat-apps[/dim]")
 
 
 
@@ -214,7 +214,7 @@ You are a helpful AI assistant. Be concise, accurate, and friendly.
 """,
         "SOUL.md": """# Soul
 
-I am nanobot, a lightweight AI assistant.
+I am SocratX, a lightweight AI assistant.
 
 ## Personality
 
@@ -296,7 +296,7 @@ def _make_provider(config: Config):
     spec = find_by_name(provider_name)
     if not model.startswith("bedrock/") and not (p and p.api_key) and not (spec and spec.is_oauth):
         console.print("[red]Error: No API key configured.[/red]")
-        console.print("Set one in ~/.nanobot/config.json under providers section")
+        console.print("Set one in ~/.SocratX/config.json under providers section")
         raise typer.Exit(1)
 
     return LiteLLMProvider(
@@ -318,7 +318,7 @@ def gateway(
     port: int = typer.Option(18790, "--port", "-p", help="Gateway port"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output"),
 ):
-    """Start the nanobot gateway."""
+    """Start the SocratX gateway."""
     from .loader import load_config, get_data_dir
     from .queue import MessageBus
     from .loop import AgentLoop
@@ -332,7 +332,7 @@ def gateway(
         import logging
         logging.basicConfig(level=logging.DEBUG)
     
-    console.print(f"{__logo__} Starting nanobot gateway on port {port}...")
+    console.print(f"{__logo__} Starting SocratX gateway on port {port}...")
     
     config = load_config()
     bus = MessageBus()
@@ -438,7 +438,7 @@ def agent(
     message: str = typer.Option(None, "--message", "-m", help="Message to send to the agent"),
     session_id: str = typer.Option("cli:direct", "--session", "-s", help="Session ID"),
     markdown: bool = typer.Option(True, "--markdown/--no-markdown", help="Render assistant output as Markdown"),
-    logs: bool = typer.Option(False, "--logs/--no-logs", help="Show nanobot runtime logs during chat"),
+    logs: bool = typer.Option(False, "--logs/--no-logs", help="Show SocratX runtime logs during chat"),
 ):
     """Interact with the agent directly."""
     from .loader import load_config
@@ -452,9 +452,9 @@ def agent(
     provider = _make_provider(config)
 
     if logs:
-        logger.enable("nanobot")
+        logger.enable("SocratX")
     else:
-        logger.disable("nanobot")
+        logger.disable("SocratX")
     
     agent_loop = AgentLoop(
         bus=bus,
@@ -477,7 +477,7 @@ def agent(
             from contextlib import nullcontext
             return nullcontext()
         # Animated spinner is safe to use with prompt_toolkit input handling
-        return console.status("[dim]nanobot is thinking...[/dim]", spinner="dots")
+        return console.status("[dim]SocratX is thinking...[/dim]", spinner="dots")
 
     if message:
         # Single message mode
@@ -613,7 +613,7 @@ def _get_bridge_dir() -> Path:
     import subprocess
     
     # User's bridge location
-    user_bridge = Path.home() / ".nanobot" / "bridge"
+    user_bridge = Path.home() / ".SocratX" / "bridge"
     
     # Check if already built
     if (user_bridge / "dist" / "index.js").exists():
@@ -625,7 +625,7 @@ def _get_bridge_dir() -> Path:
         raise typer.Exit(1)
     
     # Find source bridge: first check package data, then source dir
-    pkg_bridge = Path(__file__).parent.parent / "bridge"  # nanobot/bridge (installed)
+    pkg_bridge = Path(__file__).parent.parent / "bridge"  # SocratX/bridge (installed)
     src_bridge = Path(__file__).parent.parent.parent / "bridge"  # repo root/bridge (dev)
     
     source = None
@@ -636,7 +636,7 @@ def _get_bridge_dir() -> Path:
     
     if not source:
         console.print("[red]Bridge source not found.[/red]")
-        console.print("Try reinstalling: pip install --force-reinstall nanobot")
+        console.print("Try reinstalling: pip install --force-reinstall SocratX")
         raise typer.Exit(1)
     
     console.print(f"{__logo__} Setting up bridge...")
@@ -864,14 +864,14 @@ def cron_run(
 
 @app.command()
 def status():
-    """Show nanobot status."""
+    """Show SocratX status."""
     from .loader import load_config, get_config_path
 
     config_path = get_config_path()
     config = load_config()
     workspace = config.workspace_path
 
-    console.print(f"{__logo__} nanobot Status\n")
+    console.print(f"{__logo__} SocratX Status\n")
 
     console.print(f"Config: {config_path} {'[green]✓[/green]' if config_path.exists() else '[red]✗[/red]'}")
     console.print(f"Workspace: {workspace} {'[green]✓[/green]' if workspace.exists() else '[red]✗[/red]'}")

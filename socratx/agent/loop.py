@@ -9,20 +9,20 @@ from typing import Any
 
 from loguru import logger
 
-from .events import InboundMessage, OutboundMessage
-from .queue import MessageBus
-from .base import LLMProvider
-from .context import ContextBuilder
-from .tools.registry import ToolRegistry
-from .tools.filesystem import ReadFileTool, WriteFileTool, EditFileTool, ListDirTool
-from .tools.shell import ExecTool
-from .tools.web import WebSearchTool, WebFetchTool
-from .tools.message import MessageTool
-from .tools.spawn import SpawnTool
-from .tools.cron import CronTool
-from .memory import MemoryStore
-from .subagent import SubagentManager
-from .manager import Session, SessionManager
+from bus.events import InboundMessage, OutboundMessage
+from bus.queue import MessageBus
+from providers.base import LLMProvider
+from agent.context import ContextBuilder
+from agent.tools.registry import ToolRegistry
+from agent.tools.filesystem import ReadFileTool, WriteFileTool, EditFileTool, ListDirTool
+from agent.tools.shell import ExecTool
+from agent.tools.web import WebSearchTool, WebFetchTool
+from agent.tools.message import MessageTool
+from agent.tools.spawn import SpawnTool
+from agent.tools.cron import CronTool
+from agent.memory import MemoryStore
+from agent.subagent import SubagentManager
+from session.manager import Session, SessionManager
 
 
 class AgentLoop:
@@ -44,8 +44,8 @@ class AgentLoop:
         workspace: Path,
         model: str | None = None,
         max_iterations: int = 20,
-        temperature: float = 0.7,
-        max_tokens: int = 4096,
+        temperature: float = 0.9,
+        max_tokens: int = 8192,
         memory_window: int = 50,
         brave_api_key: str | None = None,
         exec_config: "ExecToolConfig | None" = None,
@@ -284,7 +284,7 @@ class AgentLoop:
                                   content="New session started. Memory consolidation in progress.")
         if cmd == "/help":
             return OutboundMessage(channel=msg.channel, chat_id=msg.chat_id,
-                                  content="🐈 nanobot commands:\n/new — Start a new conversation\n/help — Show available commands")
+                                  content="🐈 SocratX commands:\n/new — Start a new conversation\n/help — Show available commands")
         
         if len(session.messages) > self.memory_window:
             asyncio.create_task(self._consolidate_memory(session))

@@ -8,13 +8,13 @@ from typing import Any
 
 from loguru import logger
 
-from .events import InboundMessage
-from .queue import MessageBus
-from .base import LLMProvider
-from .tools.registry import ToolRegistry
-from .tools.filesystem import ReadFileTool, WriteFileTool, EditFileTool, ListDirTool
-from .tools.shell import ExecTool
-from .tools.web import WebSearchTool, WebFetchTool
+from bus.events import InboundMessage
+from bus.queue import MessageBus
+from providers.base import LLMProvider
+from agent.tools.registry import ToolRegistry
+from agent.tools.filesystem import ReadFileTool, WriteFileTool, EditFileTool, ListDirTool
+from agent.tools.shell import ExecTool
+from agent.tools.web import WebSearchTool, WebFetchTool
 
 
 class SubagentManager:

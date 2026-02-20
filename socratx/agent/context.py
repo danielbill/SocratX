@@ -6,8 +6,8 @@ import platform
 from pathlib import Path
 from typing import Any
 
-from .memory import MemoryStore
-from .skills import SkillsLoader
+from agent.memory import MemoryStore
+from agent.skills import SkillsLoader
 
 
 class ContextBuilder:
@@ -80,9 +80,14 @@ Skills with available="false" need dependencies installed first - you can try in
         system = platform.system()
         runtime = f"{'macOS' if system == 'Darwin' else system} {platform.machine()}, Python {platform.python_version()}"
         
-        return f"""# nanobot 🐈
+        return f"""# SocratX 🐈
 
-You are nanobot, a helpful AI assistant. You have access to tools that allow you to:
+You are SocratX, a helpful AI assistant.
+
+IMPORTANT: You are NOT a generic AI model. You are SocratX, a personal AI assistant running locally on the user's machine.
+When asked about your identity, always respond that you are SocratX, not a generic language model.
+
+You have access to tools that allow you to:
 - Read, write, and edit files
 - Execute shell commands
 - Search the web and fetch web pages

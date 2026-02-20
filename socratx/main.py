@@ -14,19 +14,15 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import List, Optional, Any
-import logging
-import json
+from typing import List, Optional
+import asyncio
 
 # 导入内部模块
-from agent.loop import AgentLoop, AgentConfig, create_agent_loop
-from session.manager import SessionManager
-from agent.memory import MemoryStore
-from agent.tools.registry import create_default_registry
-from providers.litellm_provider import create_provider
-from config.loader import init_config
+from providers.litellm_provider import LiteLLMProvider
+from config.loader import load_config
 from config.schema import Config
-from bus.queue import get_message_bus
+from agent.tools.registry import ToolRegistry
+from agent.context import ContextBuilder
 
 # 导入统一日志系统
 from utils.logger import logger
@@ -40,15 +36,6 @@ class ChatRequest(BaseModel):
     message: str = Field(..., description="用户消息")
     session_id: str = Field(default="default", description="会话 ID")
     user_id: str = Field(default="default", description="用户 ID")
-    model: Optional[str] = Field(default=None, description="覆盖默认模型")
-    stream: bool = Field(default=False, description="是否使用流式输出")
-
-
-class ToolCall(BaseModel):
-    """工具调用信息"""
-    id: str
-    name: str
-    arguments: dict
 
 
 class ChatResponse(BaseModel):
@@ -56,8 +43,6 @@ class ChatResponse(BaseModel):
     content: str = Field(..., description="AI 回复内容")
     session_id: str = Field(..., description="会话 ID")
     model: str = Field(..., description="使用的模型")
-    tool_calls: List[ToolCall] = Field(default_factory=list, description="使用的工具")
-    usage: Optional[dict] = Field(default=None, description="Token 使用情况")
 
 
 class SessionListResponse(BaseModel):
@@ -72,11 +57,6 @@ class MemoryRequest(BaseModel):
     section: Optional[str] = Field(default=None, description="目标章节")
 
 
-class ConfigUpdateRequest(BaseModel):
-    """配置更新请求"""
-    updates: dict = Field(..., description="配置更新")
-
-
 class ConfigResponse(BaseModel):
     """配置响应"""
     config: dict
@@ -86,36 +66,50 @@ class HealthResponse(BaseModel):
     """健康检查响应"""
     status: str
     version: str
-    components: dict
 
 
 # ===== 全局状态 =====
 
-# 全局组件
-_agent_loop: Optional[AgentLoop] = None
-_session_manager: Optional[SessionManager] = None
-_memory_store: Optional[MemoryStore] = None
 _config: Optional[Config] = None
+_tool_registry: Optional[ToolRegistry] = None
+_llm_provider: Optional[LiteLLMProvider] = None
+_context_builder: Optional[ContextBuilder] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
-    global _agent_loop, _session_manager, _memory_store, _config
+    global _config, _tool_registry, _llm_provider, _context_builder
 
     logger.system("Starting SocratX Agent API...")
 
     # 初始化配置
-    _config = init_config()
+    _config = load_config()
     logger.system(f"Config loaded: {_config.agents.defaults.model}")
 
-    # 初始化组件
-    _session_manager = SessionManager(_config.workspace_path)
-    _memory_store = MemoryStore(_config.workspace_path)
+    # 初始化 ContextBuilder（包含系统提示词、技能、记忆）
+    _context_builder = ContextBuilder(_config.workspace_path)
+    logger.system(f"Context builder initialized with workspace: {_config.workspace_path}")
 
     # 创建工具注册表
-    tool_registry = await create_default_registry()
-    logger.system(f"Tool registry initialized with {len(tool_registry.list_tools())} tools")
+    _tool_registry = ToolRegistry()
+    
+    # 注册文件工具
+    from agent.tools.filesystem import ReadFileTool, WriteFileTool, ListDirTool
+    _tool_registry.register(ReadFileTool())
+    _tool_registry.register(WriteFileTool())
+    _tool_registry.register(ListDirTool())
+    
+    # 注册 Shell 工具
+    from agent.tools.shell import ExecTool
+    _tool_registry.register(ExecTool())
+    
+    # 注册 Web 工具
+    from agent.tools.web import WebSearchTool, WebFetchTool
+    _tool_registry.register(WebSearchTool())
+    _tool_registry.register(WebFetchTool())
+    
+    logger.system(f"Tool registry initialized with {len(_tool_registry.tool_names)} tools")
 
     # 创建 LLM 提供商
     model_name = _config.agents.defaults.model
@@ -126,35 +120,13 @@ async def lifespan(app: FastAPI):
     api_base = _config.get_api_base(model_name) if p else None
 
     logger.system(f"Creating LLM provider: {provider_name or 'unknown'} for model {model_name}")
-    logger.system(f"API Key: {'***' if api_key else 'None'}")
-    logger.system(f"API Base: {api_base if api_base else 'None'}")
 
-    llm_provider = await create_provider(
-        model=model_name,
+    _llm_provider = LiteLLMProvider(
         api_key=api_key,
         api_base=api_base,
+        default_model=model_name,
+        provider_name=provider_name,
     )
-
-    # 创建 AgentLoop
-    _agent_loop = AgentLoop(
-        config=AgentConfig(
-            model=model_name,
-            temperature=_config.agents.defaults.temperature,
-            max_tokens=_config.agents.defaults.max_tokens,
-            max_iterations=_config.agents.defaults.max_tool_iterations,
-            workspace=_config.workspace_path,
-            memory_enabled=_config.agents.memory_enabled,
-        ),
-        session_manager=_session_manager,
-        memory_store=_memory_store,
-        tool_registry=tool_registry,
-    )
-    _agent_loop.set_llm_provider(llm_provider)
-
-    # 启动消息总线
-    message_bus = get_message_bus()
-    await message_bus.start()
-    logger.system("Message bus started")
 
     logger.system("SocratX Agent API started successfully")
 
@@ -162,7 +134,6 @@ async def lifespan(app: FastAPI):
 
     # 清理
     logger.system("Shutting down SocratX Agent API...")
-    await message_bus.stop()
     logger.system("SocratX Agent API stopped")
 
 
@@ -201,45 +172,76 @@ async def root():
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
 async def health_check():
     """健康检查"""
-    message_bus = get_message_bus()
-    bus_stats = message_bus.get_stats()
-
     return HealthResponse(
         status="healthy",
         version="1.0.0",
-        components={
-            "agent_loop": _agent_loop is not None,
-            "session_manager": _session_manager is not None,
-            "memory_store": _memory_store is not None,
-            "message_bus": bus_stats,
-        },
     )
 
 
 @app.post("/api/chat", response_model=ChatResponse, tags=["Chat"])
 async def chat(request: ChatRequest) -> ChatResponse:
     """
-    处理对话请求
+    处理对话请求 - 使用完整的上下文构建（系统提示词 + 技能 + 记忆）
     """
-    if _agent_loop is None:
+    if _llm_provider is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Agent not initialized",
+            detail="LLM provider not initialized",
         )
 
     try:
+        # 记录用户输入
         logger.conversation(
             session_id=request.session_id,
             role="USER",
             content=request.message,
         )
 
-        response = await _agent_loop.run(
-            message=request.message,
-            session_id=request.session_id,
-            user_id=request.user_id,
-        )
+        # 构建系统提示词（包含身份、技能、记忆）
+        system_prompt = _context_builder.build_system_prompt()
 
+        # 调用 LLM（带系统提示词和工具）
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": request.message}
+        ]
+
+        # 记录 AI 请求到 ai.log（包含完整提示词）
+        logger.ai_request(_config.agents.defaults.model, messages)
+
+        # 获取工具定义
+        tools = _tool_registry.get_definitions()
+
+        # 调用 LLM（带工具）
+        response = await _llm_provider.chat(messages, tools=tools)
+
+        # 处理工具调用（如果有）
+        max_iterations = 5
+        iteration = 0
+        conversation_history = messages.copy()
+
+        while response.tool_calls and iteration < max_iterations:
+            iteration += 1
+            logger.system(f"Processing {len(response.tool_calls)} tool calls (iteration {iteration})")
+
+            # 执行所有工具调用
+            tool_results = []
+            for tool_call in response.tool_calls:
+                logger.system(f"Executing tool: {tool_call.name}")
+                tool_result = await _tool_registry.execute(tool_call.name, tool_call.arguments)
+                logger.system(f"Tool result: {tool_result[:200]}...")
+                tool_results.append(f"[{tool_call.name}]: {tool_result}")
+
+            # 添加工具调用结果到对话历史（使用 user 角色，因为 GLM 不支持 tool 角色）
+            conversation_history.append({
+                "role": "user",
+                "content": "Tool execution results:\n" + "\n".join(tool_results)
+            })
+
+            # 再次调用 LLM 获取最终响应
+            response = await _llm_provider.chat(conversation_history, tools=tools)
+
+        # 记录 AI 响应
         logger.conversation(
             session_id=request.session_id,
             role="AI",
@@ -250,15 +252,6 @@ async def chat(request: ChatRequest) -> ChatResponse:
             content=response.content or "",
             session_id=request.session_id,
             model=_config.agents.defaults.model if _config else "unknown",
-            tool_calls=[
-                ToolCall(
-                    id=tc.get("id", ""),
-                    name=tc.get("name", ""),
-                    arguments=tc.get("arguments", {}),
-                )
-                for tc in (response.tool_calls or [])
-            ],
-            usage=response.metadata.get("usage"),
         )
 
     except Exception as e:
@@ -269,87 +262,70 @@ async def chat(request: ChatRequest) -> ChatResponse:
         )
 
 
-@app.get("/api/sessions", response_model=SessionListResponse, tags=["Sessions"])
+@app.get("/api/sessions", tags=["Sessions"])
 async def list_sessions(
     user_id: Optional[str] = None,
     limit: int = 100,
 ):
     """获取会话列表"""
-    if _session_manager is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Session manager not initialized",
-        )
-
-    sessions = _session_manager.list_sessions(user_id=user_id, limit=limit)
-
-    return SessionListResponse(
-        sessions=[s.to_dict() for s in sessions],
-        total=len(sessions),
-    )
+    # TODO: 实现会话管理
+    return SessionListResponse(sessions=[], total=0)
 
 
 @app.get("/api/sessions/{session_id}", tags=["Sessions"])
 async def get_session(session_id: str):
     """获取会话详情"""
-    if _session_manager is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Session manager not initialized",
-        )
-
-    session = _session_manager.get(session_id)
-    if session is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Session not found: {session_id}",
-        )
-
-    return session.to_dict()
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Session management not implemented",
+    )
 
 
 @app.delete("/api/sessions/{session_id}", tags=["Sessions"])
 async def delete_session(session_id: str):
     """删除会话"""
-    if _session_manager is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Session manager not initialized",
-        )
-
-    success = _session_manager.delete_session(session_id)
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Session not found: {session_id}",
-        )
-
-    return {"deleted": True, "session_id": session_id}
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Session management not implemented",
+    )
 
 
 @app.get("/api/memory", tags=["Memory"])
 async def get_memory():
     """获取长期记忆"""
-    if _memory_store is None:
+    if _config is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Memory store not initialized",
+            detail="Config not initialized",
         )
 
-    content = await _memory_store.get_memory()
+    # 从 workspace 读取 MEMORY.md
+    memory_file = _config.workspace_path / "memory" / "MEMORY.md"
+    content = ""
+    if memory_file.exists():
+        content = memory_file.read_text(encoding='utf-8')
+    
     return {"content": content}
 
 
 @app.post("/api/memory", tags=["Memory"])
 async def update_memory(request: MemoryRequest):
     """更新长期记忆"""
-    if _memory_store is None:
+    if _config is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Memory store not initialized",
+            detail="Config not initialized",
         )
 
-    await _memory_store.update_memory(request.content, request.section)
+    # 写入 workspace 的 MEMORY.md
+    memory_dir = _config.workspace_path / "memory"
+    memory_dir.mkdir(parents=True, exist_ok=True)
+    memory_file = memory_dir / "MEMORY.md"
+    
+    # 追加内容
+    with open(memory_file, "a", encoding='utf-8') as f:
+        f.write(f"\n\n## {request.section or 'General'}\n{request.content}\n")
+    
     return {"updated": True}
 
 
@@ -366,42 +342,36 @@ async def get_config():
 
 
 @app.post("/api/config", tags=["Config"])
-async def update_config(request: ConfigUpdateRequest):
+async def update_config(request: dict):
     """更新配置"""
-    from config.loader import update_config as uc
+    from config.loader import save_config
+    
+    if _config is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Config not initialized",
+        )
 
-    updated = uc(request.updates)
-    return {"updated": True, "config": updated.model_dump()}
+    # 简单更新（实际应该更深层次合并）
+    updates = request.get("updates", {})
+    if "model" in updates:
+        _config.agents.defaults.model = updates["model"]
+    
+    save_config(_config)
+    return {"updated": True, "config": _config.model_dump()}
 
 
 @app.get("/api/tools", tags=["Tools"])
 async def list_tools():
     """列出可用工具"""
-    if _agent_loop is None:
+    if _tool_registry is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Agent not initialized",
+            detail="Tool registry not initialized",
         )
 
-    tools = _agent_loop.tool_registry.get_tool_schemas()
+    tools = _tool_registry.get_definitions()
     return {"tools": tools, "count": len(tools)}
-
-
-@app.get("/api/stats", tags=["System"])
-async def get_stats():
-    """获取系统统计信息"""
-    stats = {}
-
-    if _session_manager:
-        stats["sessions"] = _session_manager.get_stats()
-
-    if _memory_store:
-        stats["memory"] = _memory_store.get_stats()
-
-    message_bus = get_message_bus()
-    stats["message_bus"] = message_bus.get_stats()
-
-    return stats
 
 
 if __name__ == "__main__":

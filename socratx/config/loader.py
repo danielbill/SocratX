@@ -9,11 +9,11 @@ from .schema import Config
 
 def get_config_path() -> Path:
     """Get the default configuration file path."""
-    return Path.home() / ".nanobot" / "config.json"
+    return Path.home() / ".SocratX" / "config.json"
 
 
 def get_data_dir() -> Path:
-    """Get the nanobot data directory."""
+    """Get the SocratX data directory."""
     from .helpers import get_data_path
     return get_data_path()
 

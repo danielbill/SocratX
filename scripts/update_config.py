@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-"""更新配置文件为 nanobot 格式"""
+"""更新配置文件为 SocratX 格式"""
 
 import json
 from pathlib import Path
 
 config_path = Path.home() / '.socratx' / 'config.json'
 
-# nanobot 格式配置
+# SocratX 格式配置
 config = {
     "version": "1.0.0",
     "agent": {
@@ -40,7 +40,7 @@ config = {
 with open(config_path, 'w', encoding='utf-8') as f:
     json.dump(config, f, indent=2, ensure_ascii=False)
 
-print('Config updated to nanobot format')
+print('Config updated to SocratX format')
 print(f'File location: {config_path}')
 print()
 print('Please fill in your zai AI API Key in providers.zai.api_key')

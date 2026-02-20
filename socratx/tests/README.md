@@ -311,7 +311,7 @@ Path("file.txt").write_text("内容", encoding='utf-8')
 **原因**: API Key 未配置或模型不可用
 
 **解决**:
-1. 检查 `~/.nanobot/config.json` 配置
+1. 检查 `~/.socratx/config.json` 配置
 2. 确认 API Key 有效
 3. 确认模型名称正确
 

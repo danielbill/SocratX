@@ -14,7 +14,7 @@ from oauth_cli_kit import get_token as get_codex_token
 from .base import LLMProvider, LLMResponse, ToolCallRequest
 
 DEFAULT_CODEX_URL = "https://chatgpt.com/backend-api/codex/responses"
-DEFAULT_ORIGINATOR = "nanobot"
+DEFAULT_ORIGINATOR = "SocratX"
 
 
 class OpenAICodexProvider(LLMProvider):
@@ -91,7 +91,7 @@ def _build_headers(account_id: str, token: str) -> dict[str, str]:
         "chatgpt-account-id": account_id,
         "OpenAI-Beta": "responses=experimental",
         "originator": DEFAULT_ORIGINATOR,
-        "User-Agent": "nanobot (python)",
+        "User-Agent": "SocratX (python)",
         "accept": "text/event-stream",
         "content-type": "application/json",
     }

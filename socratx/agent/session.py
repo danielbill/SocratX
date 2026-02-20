@@ -1,7 +1,7 @@
 """
 SessionManager - 会话管理器
 
-参考: nanobot/nanobot/session/manager.py
+参考: socrats/socrats/session/manager.py
 负责会话的创建、持久化和检索
 """
 

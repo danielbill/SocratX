@@ -1,5 +1,5 @@
 """
-Entry point for running nanobot as a module: python -m nanobot
+Entry point for running SocratX as a module: python -m SocratX
 """
 
 from cli.commands import app

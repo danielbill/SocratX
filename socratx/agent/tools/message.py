@@ -2,8 +2,8 @@
 
 from typing import Any, Callable, Awaitable
 
-from .base import Tool
-from .events import OutboundMessage
+from agent.tools.base import Tool
+from bus.events import OutboundMessage
 
 
 class MessageTool(Tool):

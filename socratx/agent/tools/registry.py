@@ -8,44 +8,44 @@ from .base import Tool
 class ToolRegistry:
     """
     Registry for agent tools.
-    
+
     Allows dynamic registration and execution of tools.
     """
-    
+
     def __init__(self):
         self._tools: dict[str, Tool] = {}
-    
+
     def register(self, tool: Tool) -> None:
         """Register a tool."""
         self._tools[tool.name] = tool
-    
+
     def unregister(self, name: str) -> None:
         """Unregister a tool by name."""
         self._tools.pop(name, None)
-    
+
     def get(self, name: str) -> Tool | None:
         """Get a tool by name."""
         return self._tools.get(name)
-    
+
     def has(self, name: str) -> bool:
         """Check if a tool is registered."""
         return name in self._tools
-    
+
     def get_definitions(self) -> list[dict[str, Any]]:
         """Get all tool definitions in OpenAI format."""
         return [tool.to_schema() for tool in self._tools.values()]
-    
+
     async def execute(self, name: str, params: dict[str, Any]) -> str:
         """
         Execute a tool by name with given parameters.
-        
+
         Args:
             name: Tool name.
             params: Tool parameters.
-        
+
         Returns:
             Tool execution result as string.
-        
+
         Raises:
             KeyError: If tool not found.
         """
@@ -60,14 +60,37 @@ class ToolRegistry:
             return await tool.execute(**params)
         except Exception as e:
             return f"Error executing {name}: {str(e)}"
-    
+
     @property
     def tool_names(self) -> list[str]:
         """Get list of registered tool names."""
         return list(self._tools.keys())
-    
+
     def __len__(self) -> int:
         return len(self._tools)
-    
+
     def __contains__(self, name: str) -> bool:
         return name in self._tools
+
+
+async def create_default_registry() -> ToolRegistry:
+    """Create a tool registry with default tools."""
+    registry = ToolRegistry()
+    
+    # Register filesystem tools
+    from agent.tools.filesystem import ReadFileTool, WriteFileTool, EditFileTool, ListDirTool
+    registry.register(ReadFileTool())
+    registry.register(WriteFileTool())
+    registry.register(EditFileTool())
+    registry.register(ListDirTool())
+    
+    # Register shell tool
+    from agent.tools.shell import ExecTool
+    registry.register(ExecTool())
+    
+    # Register web tools
+    from agent.tools.web import WebSearchTool, WebFetchTool
+    registry.register(WebSearchTool())
+    registry.register(WebFetchTool())
+    
+    return registry
