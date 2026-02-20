@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"d:\\\\ai_workspace\\\\SocratX\\\\docs\\\\SocratX技术栈.md\":*)",
+      "Bash(.venv/Scripts/pip install:*)",
+      "Bash(.venv/Scripts/python.exe -m pip install:*)",
+      "Bash(pnpm install:*)",
+      "Bash(.venv/Scripts/python.exe:*)",
+      "Bash(pnpm run check:*)",
+      "Bash(\"d:\\\\ai_workspace\\\\SocratX\\\\apps\\\\desktop\\\\src\\\\lib\\\\utils.ts\":*)",
+      "Bash(\"d:\\\\ai_workspace\\\\SocratX\\\\apps\\\\desktop\\\\src\\\\lib\\\\api.test.ts\":*)",
+      "Bash(\"d:\\\\ai_workspace\\\\SocratX\\\\apps\\\\desktop\\\\src-tauri\\\\Cargo.toml\":*)",
+      "Bash(cargo check:*)",
+      "Bash(pnpm tauri icon:*)",
+      "Bash(.venv/../venv/Scripts/python.exe:*)",
+      "Bash(pip install:*)",
+      "Bash(pnpm tauri:dev:*)",
+      "Bash(pnpm list:*)",
+      "Bash(pnpm add:*)"
+    ]
+  }
+}

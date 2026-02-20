@@ -1,0 +1,102 @@
+# Dependencies
+# 依赖 - node_modules, pnpm-store, Python缓存
+# 虚拟环境 - venv, env, .venv
+# IDE - VSCode, IDEA, macOS
+# Tauri - target/, Cargo.lock
+# Python - pytest, coverage, mypy
+# 测试 - vitest, coverage
+# 构建输出 - exe, dmg, app, deb
+# 配置 - .env, .local
+# 数据 - 数据库, 会话, 记忆文件
+# 系统 - Thumbs.db, .DS_Store
+node_modules/
+.pnpm-store/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+dist-info/
+*.egg-info/
+.eggs/
+*.egg
+*.whl
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.conda/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+
+# Tauri
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/Cargo.lock
+
+# Python
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+*.log
+
+# Testing
+.vitest/
+coverage/
+nyc_output/
+
+# Build output
+*.exe
+*.dmg
+*.app
+*.deb
+*.AppImage
+
+# Config
+.env
+.env.local
+.env.*.local
+*.local
+
+# Data
+.data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Memory files (SocratX)
+MEMORY.md
+HISTORY.md
+MEMORY.md.backup
+HISTORY.md.backup
+
+# Session storage
+sessions/
+*.jsonl
+
+# OS
+Thumbs.db
+desktop.ini
+.Spotlight-V100
+.Trashes
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
