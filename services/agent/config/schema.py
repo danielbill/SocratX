@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 class AgentConfig(BaseModel):
     """代理配置"""
 
-    model: str = Field(default="gpt-4o-mini", description="默认模型")
+    model: str = Field(default="zhipu/glm-4", description="默认模型")
     temperature: float = Field(default=0.7, ge=0, le=2, description="温度参数")
     max_tokens: int = Field(default=4096, gt=0, description="最大输出 token")
     max_iterations: int = Field(default=20, gt=0, description="最大工具调用迭代次数")
@@ -53,29 +53,26 @@ class ToolConfig(BaseModel):
 
 class ProviderConfig(BaseModel):
     """LLM 提供商配置"""
+    api_key: str = Field(default="", alias="apiKey")
+    api_base: str | None = Field(default=None, alias="apiBase")
+    extra_headers: dict[str, str] | None = Field(default=None, alias="extraHeaders")
+    
+    model_config = {"populate_by_name": True}
 
-    # 默认提供商
-    default_provider: str = Field(default="openai", description="默认提供商名称")
 
-    # API 密钥
-    openai_api_key: Optional[str] = Field(default=None, description="OpenAI API Key")
-    anthropic_api_key: Optional[str] = Field(default=None, description="Anthropic API Key")
-    deepseek_api_key: Optional[str] = Field(default=None, description="DeepSeek API Key")
-    gemini_api_key: Optional[str] = Field(default=None, description="Google Gemini API Key")
-    zhipuai_api_key: Optional[str] = Field(default=None, description="智谱 AI API Key")
-    dashscope_api_key: Optional[str] = Field(default=None, description="通义千问 API Key")
-    moonshot_api_key: Optional[str] = Field(default=None, description="月之暗面 API Key")
-
-    # 网关提供商
-    openrouter_api_key: Optional[str] = Field(default=None, description="OpenRouter API Key")
-    aihubmix_api_key: Optional[str] = Field(default=None, description="AiHubMix API Key")
-
-    # 自定义 API
-    custom_base_url: Optional[str] = Field(default=None, description="自定义 API Base URL")
-
-    # 本地提供商
-    ollama_base_url: str = Field(default="http://localhost:11434", description="Ollama API URL")
-    vllm_base_url: str = Field(default="http://localhost:8000", description="vLLM API URL")
+class ProvidersConfig(BaseModel):
+    """LLM 提供商集合配置"""
+    custom: ProviderConfig = Field(default_factory=ProviderConfig)
+    anthropic: ProviderConfig = Field(default_factory=ProviderConfig)
+    openai: ProviderConfig = Field(default_factory=ProviderConfig)
+    openrouter: ProviderConfig = Field(default_factory=ProviderConfig)
+    deepseek: ProviderConfig = Field(default_factory=ProviderConfig)
+    zhipu: ProviderConfig = Field(default_factory=ProviderConfig)
+    dashscope: ProviderConfig = Field(default_factory=ProviderConfig)
+    gemini: ProviderConfig = Field(default_factory=ProviderConfig)
+    moonshot: ProviderConfig = Field(default_factory=ProviderConfig)
+    ollama: ProviderConfig = Field(default_factory=ProviderConfig)
+    vllm: ProviderConfig = Field(default_factory=ProviderConfig)
 
 
 class GatewayConfig(BaseModel):
@@ -111,7 +108,7 @@ class SocratXConfig(BaseModel):
 
     agent: AgentConfig = Field(default_factory=AgentConfig, description="代理配置")
     tools: ToolConfig = Field(default_factory=ToolConfig, description="工具配置")
-    providers: ProviderConfig = Field(default_factory=ProviderConfig, description="提供商配置")
+    providers: ProvidersConfig = Field(default_factory=ProvidersConfig, description="提供商配置")
     gateway: GatewayConfig = Field(default_factory=GatewayConfig, description="网关配置")
     logging: LoggingConfig = Field(default_factory=LoggingConfig, description="日志配置")
 
@@ -133,22 +130,11 @@ class SocratXConfig(BaseModel):
         Returns:
             API 密钥或 None
         """
-        mapping = {
-            "openai": "openai_api_key",
-            "anthropic": "anthropic_api_key",
-            "deepseek": "deepseek_api_key",
-            "gemini": "gemini_api_key",
-            "zhipu": "zhipuai_api_key",
-            "dashscope": "dashscope_api_key",
-            "moonshot": "moonshot_api_key",
-            "openrouter": "openrouter_api_key",
-            "aihubmix": "aihubmix_api_key",
-        }
-
-        field_name = mapping.get(provider_name)
-        if field_name:
-            return getattr(self.providers, field_name, None)
-
+        # 从 providers 中获取对应的 provider 配置
+        if hasattr(self.providers, provider_name):
+            provider_config = getattr(self.providers, provider_name)
+            if hasattr(provider_config, "api_key"):
+                return provider_config.api_key
         return None
 
     def model_dump_json(self, **kwargs) -> str:
@@ -157,7 +143,11 @@ class SocratXConfig(BaseModel):
 
 
 # 默认配置
-DEFAULT_CONFIG = SocratXConfig()
+DEFAULT_CONFIG = SocratXConfig(
+    agent=AgentConfig(
+        model="zhipu/glm-4",
+    ),
+)
 
 
 def get_default_config() -> SocratXConfig:

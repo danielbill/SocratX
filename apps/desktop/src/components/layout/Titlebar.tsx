@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import { Minus, Square, X, Settings, MessageSquare } from 'lucide-react'
+import { Minus, Square, X, Settings, MessageSquare, Sun, Moon, Brain, Users } from 'lucide-react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface TitlebarProps {
   onSettingsClick?: () => void
 }
 
 export function Titlebar({ onSettingsClick }: TitlebarProps) {
-  const [isHovered, setIsHovered] = useState(false)
   const [isMaximized, setIsMaximized] = useState(false)
+  const { theme, setTheme } = useTheme()
 
   const handleMinimize = async () => {
     try {
@@ -44,30 +45,79 @@ export function Titlebar({ onSettingsClick }: TitlebarProps) {
     }
   }
 
+  const toggleTheme = () => {
+    if (theme === 'light') {
+      setTheme('dark')
+    } else if (theme === 'dark') {
+      setTheme('gray')
+    } else {
+      setTheme('light')
+    }
+  }
+
+  const getThemeIcon = () => {
+    if (theme === 'light') return Sun
+    if (theme === 'dark') return Moon
+    return Sun // gray and custom use sun
+  }
+
+  const ThemeIcon = getThemeIcon()
+
   return (
     <div
       className="h-11 bg-background border-b border-border flex items-center justify-between select-none"
       data-tauri-drag-region
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Left side - App title */}
+      {/* Left side - App title + Theme toggle */}
       <div className="flex items-center pl-4 gap-2" data-tauri-drag-region>
         <MessageSquare size={16} className="text-foreground/60" />
         <span className="text-sm font-medium text-foreground/80">SocratX</span>
+
+        {/* Theme toggle button */}
+        <button
+          onClick={toggleTheme}
+          className="ml-2 p-1.5 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+          title={`Current theme: ${theme}. Click to cycle themes.`}
+          type="button"
+          data-tauri-drag-region={false}
+        >
+          <ThemeIcon size={14} className="text-foreground/70" />
+        </button>
       </div>
 
       {/* Center - Drag region (invisible but functional) */}
       <div className="flex-1" data-tauri-drag-region />
 
-      {/* Right side - Window controls + Navigation */}
+      {/* Right side - Navigation + Window controls */}
       <div className="flex items-center pr-3 gap-1">
+        {/* Navigation buttons */}
+        <button
+          onClick={() => {/* Navigate to agents */}}
+          className="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+          title="Agents"
+          type="button"
+          data-tauri-drag-region={false}
+        >
+          <Brain size={16} />
+        </button>
+
+        <button
+          onClick={() => {/* Navigate to memory */}}
+          className="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+          title="Memory"
+          type="button"
+          data-tauri-drag-region={false}
+        >
+          <Users size={16} />
+        </button>
+
         {onSettingsClick && (
           <button
             onClick={onSettingsClick}
             className="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
             title="Settings"
             type="button"
+            data-tauri-drag-region={false}
           >
             <Settings size={16} />
           </button>

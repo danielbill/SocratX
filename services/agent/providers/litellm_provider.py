@@ -7,6 +7,7 @@ LiteLLM Provider - 基于 LiteLLM 的 LLM 提供商实现
 
 import asyncio
 import os
+import logging
 from dataclasses import dataclass
 from typing import Any, Optional
 from datetime import datetime
@@ -16,6 +17,9 @@ from .registry import (
     format_model_name,
     ProviderSpec,
 )
+
+# 获取 AI 日志记录器
+ai_logger = logging.getLogger("socratx.ai")
 
 
 @dataclass
@@ -75,6 +79,8 @@ class LiteLLMProvider:
             temperature: 温度参数
             max_tokens: 最大 token 数
         """
+        print(f"LiteLLMProvider init: model={model}, api_key={'***' if api_key else 'None'}")
+        
         self.model = model
         self.api_key = api_key
         self.base_url = base_url
@@ -83,9 +89,11 @@ class LiteLLMProvider:
 
         # 检测提供商
         self.provider = get_provider_for_model(model)
+        print(f"Provider detected: {self.provider.name if self.provider else 'None'}")
 
         # 格式化模型名称
         self.formatted_model = format_model_name(model, self.provider)
+        print(f"Formatted model: {self.formatted_model}")
 
         # 设置环境变量
         self._setup_env()
@@ -97,9 +105,21 @@ class LiteLLMProvider:
             self.api_key = os.getenv(self.provider.env_key)
 
         if self.api_key:
+            # 设置所有可能的 API Key 环境变量
             os.environ["ANTHROPIC_API_KEY"] = self.api_key
             os.environ["OPENAI_API_KEY"] = self.api_key
             os.environ["OPENROUTER_API_KEY"] = self.api_key
+            os.environ["ZHIPUAI_API_KEY"] = self.api_key
+            os.environ["DASHSCOPE_API_KEY"] = self.api_key
+            os.environ["GEMINI_API_KEY"] = self.api_key
+            os.environ["DEEPSEEK_API_KEY"] = self.api_key
+            os.environ["MOONSHOT_API_KEY"] = self.api_key
+            
+            # 设置 LiteLLM 特定的 API Key 格式
+            os.environ[f"{self.provider.name.upper()}_API_KEY"] = self.api_key
+        else:
+            # 调试：记录 API Key 缺失
+            print(f"WARNING: No API key for provider: {self.provider.name if self.provider else 'unknown'}")
 
         if self.base_url:
             os.environ["OPENAI_API_BASE"] = self.base_url
@@ -146,6 +166,14 @@ class LiteLLMProvider:
             "temperature": temperature if temperature is not None else self.temperature,
             "max_tokens": max_tokens if max_tokens is not None else self.max_tokens,
         }
+        
+        # 传递 API Key（如果已设置）
+        if self.api_key:
+            request_params["api_key"] = self.api_key
+            
+        # 传递 API Base（如果已设置）
+        if self.base_url:
+            request_params["api_base"] = self.base_url
 
         # 添加工具（如果提供）
         if tools:
@@ -155,14 +183,25 @@ class LiteLLMProvider:
         request_params.update(kwargs)
 
         try:
-            # 调用 LLM
+            # 调用 LLM - 记录请求
+            msg_preview = str(messages)[:200] + "..." if len(str(messages)) > 200 else str(messages)
+            ai_logger.info("[REQUEST] Model: %s | Messages: %s", model_to_use, msg_preview)
+            
             response = await acompletion(**request_params)
 
             # 解析响应
-            return self._parse_response(response)
+            llm_response = self._parse_response(response)
+            
+            # 记录 AI 响应
+            content_preview = llm_response.content[:100] + "..." if len(llm_response.content) > 100 else llm_response.content
+            usage_str = f" | Usage: {llm_response.usage}" if llm_response.usage else ""
+            ai_logger.info("[RESPONSE] %s%s", content_preview, usage_str)
+            
+            return llm_response
 
         except Exception as e:
             # 错误处理
+            ai_logger.error("Error calling LLM: %s", e, exc_info=True)
             return LLMResponse(
                 content=f"Error calling LLM: {str(e)}",
                 model=model_to_use,
@@ -271,6 +310,7 @@ class MockLLMProvider:
 async def create_provider(
     model: str = "gpt-4o-mini",
     api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
     mock: bool = False,
 ) -> LiteLLMProvider | MockLLMProvider:
     """
@@ -279,6 +319,7 @@ async def create_provider(
     Args:
         model: 模型名称
         api_key: API 密钥
+        base_url: API Base URL
         mock: 是否使用 mock 提供商
 
     Returns:
@@ -290,4 +331,5 @@ async def create_provider(
     return LiteLLMProvider(
         model=model,
         api_key=api_key,
+        base_url=base_url,
     )

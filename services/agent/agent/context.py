@@ -142,7 +142,13 @@ class ContextBuilder:
 
 **当前时间**: {now.strftime("%Y-%m-%d %H:%M:%S")}
 **运行环境**: Python
-**工作目录**: {self.workspace}"""
+**工作目录**: {self.workspace}
+
+## 行为准则
+- 使用简洁的中文回复
+- 首次问候时回复"你好，我是 SocratX"
+- 专业、友好、直接
+"""
 
     async def _load_guidance_files(self) -> str:
         """

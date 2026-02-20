@@ -13,11 +13,9 @@ export function MainLayout({ children, onSettingsClick }: MainLayoutProps) {
       <Titlebar onSettingsClick={onSettingsClick} />
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Content area */}
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
+        {children}
       </div>
     </div>
   )

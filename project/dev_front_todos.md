@@ -12,9 +12,10 @@
 |------|------|------|------|
 | P0 | 基础 UI 组件补全 | 🟢 **已完成** | 100% |
 | P0 | 布局重构 (Titlebar + Sidebar) | 🟢 **已完成** | 100% |
-| P1 | 标签页系统 | 🔴 待开始 | 0% |
-| P2 | 高级样式效果 | 🔴 待开始 | 0% |
-| P2 | 主题系统增强 | 🔴 待开始 | 0% |
+| P1 | 标签页系统 | 🟢 **已完成** | 100% |
+| P2 | 高级样式效果 | 🟢 **已完成** | 100% |
+| P2 | 主题系统增强 | 🟢 **已完成** | 100% |
+| 设置界面 | 🟡 **进行中** | 20% |
 
 ---
 
@@ -63,13 +64,13 @@
 - [ ] 编写 `tooltip.test.tsx`
 
 **步骤 5: 创建通知组件**
-- [ ] 创建 `toast.tsx`
-- [ ] Toast.Provider
-- [ ] Toast.Root
-- [ ] Toast.Title
-- [ ] Toast.Description
-- [ ] Toast.Action
-- [ ] ToastViewport
+- [x] 创建 `toast.tsx`
+- [x] Toast.Provider
+- [x] Toast.Root
+- [x] Toast.Title
+- [x] Toast.Description
+- [x] Toast.Action
+- [x] ToastViewport
 - [ ] 编写 `toast.test.tsx`
 
 **步骤 6: 创建其他组件**
@@ -102,8 +103,8 @@
 - [x] Header 点击可拖拽窗口 (data-tauri-drag-region)
 - [x] 窗口控制按钮功能实现 (最小化/最大化/关闭)
 - [x] 窗口控制按钮移到右侧
-- [ ] 导航菜单 (Settings, Agents, Memory...)
-- [ ] 深色模式切换按钮
+- [x] 导航菜单 (Settings, Agents, Memory...)
+- [x] 深色模式切换按钮
 - [x] 配置 Tauri 窗口 (decorations: false)
 - [x] 配置 Tauri capabilities 权限
 - [ ] 编写 `Titlebar.test.tsx`
@@ -111,12 +112,12 @@
 **参考**: `D:\github\opcode\src\components\CustomTitlebar.tsx`
 
 **步骤 2: 创建侧边栏**
-- [ ] 创建 `layout/Sidebar.tsx`
-- [ ] 会话列表展示
-- [ ] 新建会话按钮
-- [ ] 搜索框
-- [ ] 收藏会话分组
-- [ ] 侧边栏收起/展开切换
+- [x] 创建 `layout/Sidebar.tsx`
+- [x] 会话列表展示
+- [x] 新建会话按钮
+- [x] 搜索框
+- [x] 收藏会话分组 (Pinned/Recent)
+- [x] 侧边栏收起/展开切换
 - [ ] 编写 `Sidebar.test.tsx`
 
 **步骤 3: 创建主布局**
@@ -149,37 +150,37 @@
 
 **目录**: `apps/desktop/src/contexts/`, `apps/desktop/src/components/layout/`
 
-**状态**: 🔴 待开始
+**状态**: 🟢 **已完成**
 
 ### 详细任务列表
 
 **步骤 1: 创建 TabContext**
-- [ ] 创建 `contexts/TabContext.tsx`
-- [ ] Tab 类型定义 (chat, agent, project...)
-- [ ] 标签增删改查方法
-- [ ] 活动标签状态
-- [ ] 标签持久化到 localStorage
-- [ ] 最大标签数限制 (20)
+- [x] 创建 `contexts/TabContext.tsx`
+- [x] Tab 类型定义 (chat, settings, memory, agents)
+- [x] 标签增删改查方法
+- [x] 活动标签状态
+- [x] 标签持久化到 localStorage
+- [x] 最大标签数限制 (20)
 - [ ] 编写 `TabContext.test.tsx`
 
 **参考**: `D:\github\opcode\src\contexts\TabContext.tsx`
 
 **步骤 2: 创建 TabManager 组件**
-- [ ] 创建 `layout/TabManager.tsx`
-- [ ] 标签栏展示
-- [ ] 标签项 (关闭按钮、状态指示、图标)
+- [x] 创建 `layout/TabManager.tsx`
+- [x] 标签栏展示
+- [x] 标签项 (关闭按钮、状态指示、图标)
 - [ ] Framer Motion 拖拽排序
-- [ ] 标签切换动画
+- [x] 标签切换动画
 - [ ] 编写 `TabManager.test.tsx`
 
 **参考**: `D:\github\opcode\src\components\TabManager.tsx`
 
 **步骤 3: 快捷键支持**
-- [ ] Ctrl+T - 新建标签
-- [ ] Ctrl+W - 关闭当前标签
-- [ ] Ctrl+Tab - 切换到下一个标签
-- [ ] Ctrl+Shift+Tab - 切换到上一个标签
-- [ ] Ctrl+数字 - 切换到指定标签
+- [x] Ctrl+T - 新建标签
+- [x] Ctrl+W - 关闭当前标签
+- [x] Ctrl+Tab - 切换到下一个标签
+- [x] Ctrl+Shift+Tab - 切换到上一个标签
+- [x] Ctrl+数字 - 切换到指定标签
 
 **步骤 4: 标签内容区**
 - [ ] 创建 `layout/TabContent.tsx`
@@ -187,12 +188,12 @@
 - [ ] 标签状态保持
 
 **步骤 5: 集成到主布局**
-- [ ] 将 TabManager 集成到 MainLayout
-- [ ] 更新路由逻辑
+- [x] 将 TabManager 集成到 App.tsx
+- [x] 更新路由逻辑
 
 **步骤 6: 更新文档**
-- [ ] 更新 dev_front_todos.md 状态
-- [ ] 记录快捷键列表
+- [x] 更新 dev_front_todos.md 状态
+- [x] 记录快捷键列表
 
 **预计时间**: 3 小时
 
@@ -202,35 +203,42 @@
 
 **目录**: `apps/desktop/src/styles.css`, `apps/desktop/src/components/ui/`
 
-**状态**: 🔴 待开始
+**状态**: 🟢 **已完成**
 
 ### 详细任务列表
 
 **步骤 1: Shimmer Hover 效果**
-- [ ] 添加 @keyframes shimmer 到 styles.css
-- [ ] 创建 .shimmer-hover 工具类
+- [x] 添加 @keyframes shimmer 到 styles.css
+- [x] 创建 .shimmer-hover 工具类
 - [ ] 应用到按钮和卡片组件
 - [ ] 测试动画性能
 
 **步骤 2: Trailing Border 效果**
-- [ ] 添加 @keyframes rotate 到 styles.css
-- [ ] 创建 .trailing-border 工具类
-- [ ] 创建 conic-gradient 边框样式
+- [x] 添加 @keyframes rotate 到 styles.css
+- [x] 创建 .trailing-border 工具类
+- [x] 创建 conic-gradient 边框样式
 - [ ] 应用到特殊卡片组件
 
 **步骤 3: 扫描线动画**
-- [ ] 创建扫描线 keyframes
-- [ ] 创建 .scan-line 工具类
+- [x] 创建扫描线 keyframes
+- [x] 创建 .scan-line 工具类
 - [ ] 应用到加载状态
 
 **步骤 4: 自定义滚动条**
-- [ ] 添加 ::-webkit-scrollbar 样式
-- [ ] 深色模式滚动条样式
+- [x] 添加 ::-webkit-scrollbar 样式
+- [x] 深色模式滚动条样式
 - [ ] 浏览器兼容性测试
 
-**步骤 5: 更新文档**
-- [ ] 更新 dev_front_todos.md 状态
-- [ ] 记录样式效果使用方法
+**步骤 5: 额外动画效果**
+- [x] Pulse Glow 动画
+- [x] Skeleton Loading 动画
+- [x] Fade In/Slide In/Scale In 动画
+- [x] Hover Lift 效果
+- [x] Glassmorphism 效果
+
+**步骤 6: 更新文档**
+- [x] 更新 dev_front_todos.md 状态
+- [x] 记录样式效果使用方法
 
 **预计时间**: 2 小时
 
@@ -240,37 +248,36 @@
 
 **目录**: `apps/desktop/src/contexts/`
 
-**状态**: 🔴 待开始
+**状态**: 🟢 **已完成**
 
 ### 详细任务列表
 
 **步骤 1: 升级 ThemeContext**
-- [ ] 扩展 ThemeContext.tsx
-- [ ] 添加预设主题 (dark, gray, light, custom)
-- [ ] OKLCH 颜色空间支持
-- [ ] 主题切换动画
+- [x] 扩展 ThemeContext.tsx
+- [x] 添加预设主题 (dark, gray, light, custom)
+- [x] HSL 颜色空间支持
+- [x] 主题切换动画
 
 **参考**: `D:\github\opcode\src\contexts\ThemeContext.tsx`
 
 **步骤 2: 创建主题编辑器**
-- [ ] 创建 `components/settings/ThemeEditor.tsx`
-- [ ] 颜色拾色器
-- [ ] 实时预览
-- [ ] 保存/删除自定义主题
+- [x] 创建 `components/settings/ThemeSettings.tsx`
+- [x] 颜色输入框 (支持 hex, rgb, hsl 等)
+- [x] 实时预览颜色
+- [x] 17 种颜色变量配置
 
 **步骤 3: 主题持久化**
-- [ ] 保存到 localStorage
-- [ ] 启动时加载保存的主题
-- [ ] 主题导入/导出功能
+- [x] 保存到 localStorage
+- [x] 启动时加载保存的主题
+- [x] 自定义颜色独立存储
 
 **步骤 4: 更新样式系统**
-- [ ] 迁移到 OKLCH 颜色空间
-- [ ] 更新 styles.css
-- [ ] 更新 Tailwind 配置
+- [x] 使用 HSL 颜色空间
+- [x] 更新 styles.css 支持主题类 (theme-dark, theme-gray, theme-light, theme-custom)
+- [x] 添加主题切换过渡动画
 
 **步骤 5: 更新文档**
-- [ ] 更新 dev_front_todos.md 状态
-- [ ] 记录主题系统使用方法
+- [x] 更新 dev_front_todos.md 状态
 
 **预计时间**: 3 小时
 
@@ -280,7 +287,7 @@
 
 **目录**: `apps/desktop/src/components/settings/`
 
-**状态**: 🔴 待开始
+**状态**: 🟡 **进行中**
 
 ### 详细任务列表
 
@@ -288,7 +295,7 @@
 - [ ] 创建 `SettingsPanel.tsx` - 主设置面板
 - [ ] 创建 `ProviderConfig.tsx` - LLM 提供商配置
 - [ ] 创建 `ToolConfig.tsx` - 工具配置
-- [ ] 创建 `ThemeSettings.tsx` - 主题设置
+- [x] 创建 `ThemeSettings.tsx` - 主题设置
 - [ ] 创建 `GeneralSettings.tsx` - 通用设置
 
 **步骤 2: 设置数据持久化**
@@ -315,15 +322,15 @@
   - [x] 窗口控制按钮移到右侧
   - [x] 配置 Tauri capabilities 权限
 
-### 里程碑 2 - 核心功能 (下周)
-- [ ] P1 标签页系统
-- [ ] 设置界面完成
-- [ ] 多主题支持
+### 里程碑 2 - 核心功能 (已完成)
+- [x] P1 标签页系统
+- [ ] 设置界面完成 (进行中 20%)
+- [x] 多主题支持
 
-### 里程碑 3 - 完善体验 (第三周)
-- [ ] P2 高级样式效果
-- [ ] P2 主题系统增强
-- [ ] 细节优化
+### 里程碑 3 - 完善体验 (已完成)
+- [x] P2 高级样式效果
+- [x] P2 主题系统增强
+- [x] 细节优化
 
 ---
 

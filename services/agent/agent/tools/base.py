@@ -1,13 +1,88 @@
 """
 Tool Base - 工具抽象基类
 
-参考: nanobot/nanobot/agent/tools/base.py
+参考：nanobot/nanobot/agent/tools/base.py
 定义所有工具的通用接口
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
-from pydantic import BaseModel
+from typing import Any, Optional, List
+from pydantic import BaseModel, Field
+
+
+# =============================================================================
+# 工具规格定义 (用于 LLM 函数调用)
+# =============================================================================
+
+
+class ToolParameter(BaseModel):
+    """
+    工具参数定义
+
+    用于描述工具的单个参数
+
+    Attributes:
+        name: 参数名称
+        type: 参数类型 (string, integer, number, boolean, array, object)
+        description: 参数描述
+        required: 是否必填
+    """
+    name: str
+    type: str = "string"
+    description: str = ""
+    required: bool = False
+
+
+class ToolSpec(BaseModel):
+    """
+    工具规格定义
+
+    用于描述工具的完整接口，可转换为 OpenAI 函数调用格式
+
+    Attributes:
+        name: 工具名称
+        description: 工具描述
+        parameters: 参数列表
+    """
+    name: str
+    description: str
+    parameters: List[ToolParameter] = Field(default_factory=list)
+
+    def to_openai_schema(self) -> dict:
+        """
+        转换为 OpenAI 函数调用格式
+
+        Returns:
+            OpenAI 格式的函数 schema
+        """
+        properties = {}
+        required = []
+
+        for param in self.parameters:
+            properties[param.name] = {
+                "type": param.type,
+                "description": param.description,
+            }
+            if param.required:
+                required.append(param.name)
+
+        return {
+            "type": "function",
+            "function": {
+                "name": self.name,
+                "description": self.description,
+                "parameters": {
+                    "type": "object",
+                    "properties": properties,
+                    "required": required,
+                },
+            },
+        }
+
+
+# =============================================================================
+# 工具基类
+# =============================================================================
 
 
 class ToolArgs(BaseModel):
@@ -114,3 +189,7 @@ class SimpleTool(Tool):
 
     def _get_parameters_schema(self) -> dict:
         return self._parameters_schema
+
+
+# 别名：ToolBase = Tool (为了测试兼容性)
+ToolBase = Tool

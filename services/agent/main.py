@@ -4,6 +4,12 @@ SocratX Agent API - FastAPI 主入口
 提供 HTTP API 接口供 Tauri 前端调用
 """
 
+import sys
+from pathlib import Path
+
+# 添加项目根目录到 Python 路径
+sys.path.insert(0, str(Path(__file__).parent))
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,10 +28,33 @@ from config.schema import SocratXConfig
 from bus.events import InboundMessage, OutboundMessage, MessageType
 from bus.queue import get_message_bus
 
+# 导入统一日志系统
+from utils.logger import logger
 
-# 日志配置
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# 配置 AI 日志 handler
+def _setup_ai_logger():
+    """配置 AI 日志记录器"""
+    ai_logger = logging.getLogger("socratx.ai")
+    ai_logger.setLevel(logging.DEBUG)
+    ai_logger.propagate = False
+    
+    # 清除现有 handler
+    ai_logger.handlers.clear()
+    
+    # 日志文件
+    log_dir = Path(__file__).parent / "logs"
+    log_dir.mkdir(exist_ok=True)
+    
+    # AI 日志 handler
+    ai_format = logging.Formatter(
+        "[%(asctime)s] %(levelname)s %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    ai_handler = logging.FileHandler(log_dir / "ai.log", encoding="utf-8")
+    ai_handler.setFormatter(ai_format)
+    ai_logger.addHandler(ai_handler)
+
+_setup_ai_logger()
 
 
 # ===== 请求/响应模型 =====
@@ -99,11 +128,11 @@ async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     global _agent_loop, _session_manager, _memory_store, _config
 
-    logger.info("Starting SocratX Agent API...")
+    logger.system("Starting SocratX Agent API...")
 
     # 初始化配置
     _config = init_config()
-    logger.info(f"Config loaded: {_config.agent.model}")
+    logger.system(f"Config loaded: {_config.agent.model}")
 
     # 初始化组件
     _session_manager = SessionManager()
@@ -111,12 +140,44 @@ async def lifespan(app: FastAPI):
 
     # 创建工具注册表
     tool_registry = await create_default_registry()
-    logger.info(f"Tool registry initialized with {len(tool_registry.list_tools())} tools")
+    logger.system(f"Tool registry initialized with {len(tool_registry.list_tools())} tools")
 
     # 创建 LLM 提供商
+    # 从配置中获取提供商 - 使用关键词匹配（参考 nanobot）
+    model_name = _config.agent.model
+    model_lower = model_name.lower()
+    
+    # 从 providers registry 获取关键词匹配
+    from providers.registry import PROVIDERS
+    
+    provider_config = None
+    provider_name = None
+    
+    for spec in PROVIDERS:
+        p = getattr(_config.providers, spec.name, None)
+        if p and p.api_key and any(kw in model_lower for kw in spec.keywords):
+            provider_config = p
+            provider_name = spec.name
+            break
+    
+    # 如果没有匹配，尝试从模型前缀获取
+    if not provider_config:
+        prefix = model_name.split("/")[0] if "/" in model_name else "openai"
+        if hasattr(_config.providers, prefix):
+            provider_config = getattr(_config.providers, prefix)
+            provider_name = prefix
+    
+    api_key = provider_config.api_key if provider_config else None
+    api_base = provider_config.api_base if provider_config else None
+    
+    logger.system(f"Creating LLM provider: {provider_name or 'unknown'} for model {model_name}")
+    logger.system(f"API Key: {'***' if api_key else 'None'}")
+    logger.system(f"API Base: {api_base if api_base else 'None'}")
+    
     llm_provider = await create_provider(
-        model=_config.agent.model,
-        api_key=_config.get_provider_api_key(_config.providers.default_provider),
+        model=model_name,
+        api_key=api_key,
+        base_url=api_base,
     )
 
     # 创建 AgentLoop
@@ -139,16 +200,16 @@ async def lifespan(app: FastAPI):
     # 启动消息总线
     message_bus = get_message_bus()
     await message_bus.start()
-    logger.info("Message bus started")
+    logger.system("Message bus started")
 
-    logger.info("SocratX Agent API started successfully")
+    logger.system("SocratX Agent API started successfully")
 
     yield
 
     # 清理
-    logger.info("Shutting down SocratX Agent API...")
+    logger.system("Shutting down SocratX Agent API...")
     await message_bus.stop()
-    logger.info("SocratX Agent API stopped")
+    logger.system("SocratX Agent API stopped")
 
 
 # ===== FastAPI 应用 =====
@@ -215,11 +276,25 @@ async def chat(request: ChatRequest) -> ChatResponse:
         )
 
     try:
+        # 记录用户输入
+        logger.conversation(
+            session_id=request.session_id,
+            role="USER",
+            content=request.message,
+        )
+
         # 使用 AgentLoop 处理消息
         response = await _agent_loop.run(
             message=request.message,
             session_id=request.session_id,
             user_id=request.user_id,
+        )
+
+        # 记录 AI 响应
+        logger.conversation(
+            session_id=request.session_id,
+            role="AI",
+            content=response.content,
         )
 
         return ChatResponse(
@@ -238,7 +313,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
         )
 
     except Exception as e:
-        logger.error(f"Error processing chat request: {e}")
+        logger.error(f"Error processing chat request: {e}", exc=e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
