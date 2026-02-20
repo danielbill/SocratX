@@ -21,6 +21,9 @@
   --color-input: 214.3 31.8% 91.4%;
   --color-ring: 222.2 84% 4.9%;
   --color-radius: 0.5rem;
+
+  /* Additional color variables */
+  --color-*: initial;
 }
 
 @theme dark {
@@ -45,11 +48,60 @@
   --color-ring: 212.7 26.8% 83.9%;
 }
 
+/* Base styles */
 * {
-  @apply border-border;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 body {
   @apply bg-background text-foreground;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--color-muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--color-muted-foreground) / 0.5);
+}
+
+/* Tauri drag region */
+[data-tauri-drag-region] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Remove default button styles */
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* Utility classes */
+.flex-1 {
+  flex: 1 1 0%;
 }

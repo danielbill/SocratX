@@ -140,7 +140,8 @@ class TestFileRead:
             {"path": str(test_file)},
         )
 
-        assert result.success is True
+        # execute() 返回字符串内容
+        assert isinstance(result, str)
         assert "Hello, World!" in result
 
     @pytest.mark.asyncio
@@ -148,6 +149,7 @@ class TestFileRead:
         """测试文件不存在"""
         non_existent = tmp_path / "nonexistent.txt"
 
+        # 文件不存在会抛出 RuntimeError
         with pytest.raises(RuntimeError, match="File not found"):
             await tool_registry.execute(
                 "file_read",
@@ -165,7 +167,7 @@ class TestFileRead:
             {"path": str(test_file)},
         )
 
-        assert result.success is True
+        assert isinstance(result, str)
         assert "你好 世界！🚀" in result
 
     @pytest.mark.asyncio
@@ -179,7 +181,7 @@ class TestFileRead:
             {"path": str(test_file)},
         )
 
-        assert result.success is True
+        assert isinstance(result, str)
         assert result == ""
 
 
@@ -201,7 +203,8 @@ class TestFileWrite:
             {"path": str(test_file), "content": "Test content"},
         )
 
-        assert result.success is True
+        # execute() 返回字符串内容
+        assert isinstance(result, str)
         assert test_file.exists()
         assert test_file.read_text(encoding="utf-8") == "Test content"
 
@@ -215,7 +218,7 @@ class TestFileWrite:
             {"path": str(test_file), "content": "Nested content"},
         )
 
-        assert result.success is True
+        assert isinstance(result, str)
         assert test_file.exists()
         assert test_file.read_text(encoding="utf-8") == "Nested content"
 
@@ -230,7 +233,7 @@ class TestFileWrite:
             {"path": str(test_file), "content": "New content"},
         )
 
-        assert result.success is True
+        assert isinstance(result, str)
         assert test_file.read_text(encoding="utf-8") == "New content"
 
     @pytest.mark.asyncio
@@ -243,7 +246,7 @@ class TestFileWrite:
             {"path": str(test_file), "content": "你好 世界！🚀"},
         )
 
-        assert result.success is True
+        assert isinstance(result, str)
         assert test_file.read_text(encoding="utf-8") == "你好 世界！🚀"
 
 
@@ -268,7 +271,8 @@ class TestFileList:
             {"path": str(tmp_path)},
         )
 
-        assert result.success is True
+        # execute() 返回字符串内容
+        assert isinstance(result, str)
         assert "file1.txt" in result
         assert "file2.txt" in result
         assert "subdir" in result
@@ -284,7 +288,7 @@ class TestFileList:
             {"path": str(empty_dir)},
         )
 
-        assert result.success is True
+        assert isinstance(result, str)
         assert "empty directory" in result
 
     @pytest.mark.asyncio
@@ -318,14 +322,14 @@ class TestFileOperations:
             "file_write",
             {"path": str(test_file), "content": content},
         )
-        assert write_result.success is True
+        assert isinstance(write_result, str)
 
         # 读取
         read_result = await tool_registry.execute(
             "file_read",
             {"path": str(test_file)},
         )
-        assert read_result.success is True
+        assert isinstance(read_result, str)
         assert content in read_result
 
     @pytest.mark.asyncio
@@ -339,14 +343,14 @@ class TestFileOperations:
                 "file_write",
                 {"path": str(f), "content": f"Content {i}"},
             )
-            assert result.success is True
+            assert isinstance(result, str)
 
         # 列出目录
         list_result = await tool_registry.execute(
             "file_list",
             {"path": str(tmp_path)},
         )
-        assert list_result.success is True
+        assert isinstance(list_result, str)
         for f in files:
             assert f.name in list_result
 

@@ -80,30 +80,30 @@ class TestShellExec:
             {"command": "echo Hello World"},
         )
 
-        assert result.success is True
+        # execute() 返回字符串内容
+        assert isinstance(result, str)
         assert "Hello World" in result
 
     @pytest.mark.asyncio
     async def test_shell_exec_error(self, tool_registry):
         """测试命令执行错误"""
-        # 使用返回非零退出码的命令
-        result = await tool_registry.execute(
-            "shell_exec",
-            {"command": "exit 1"},
-        )
-
-        # 应该抛出 RuntimeError
-        assert result.success is False
+        # 使用返回非零退出码的命令会抛出 RuntimeError
+        with pytest.raises(RuntimeError):
+            await tool_registry.execute(
+                "shell_exec",
+                {"command": "exit 1"},
+            )
 
     @pytest.mark.asyncio
     async def test_shell_exec_with_output(self, tool_registry):
         """测试带输出的命令"""
         result = await tool_registry.execute(
             "shell_exec",
-            {"command": "dir" if subprocess.os.name == "nt" else "ls"},
+            {"command": "dir"},
         )
 
-        assert result.success is True
+        # 应该返回字符串
+        assert isinstance(result, str)
         assert len(result) > 0
 
     @pytest.mark.asyncio
@@ -111,11 +111,12 @@ class TestShellExec:
         """测试管道命令"""
         result = await tool_registry.execute(
             "shell_exec",
-            {"command": "echo test | findstr test" if subprocess.os.name == "nt" else "echo test | grep test"},
+            {"command": "echo test | findstr test"},
         )
 
-        # 管道命令应该成功
-        assert result.success is True or "test" in result
+        # 管道命令应该返回结果
+        assert isinstance(result, str)
+        assert "test" in result
 
 
 # =============================================================================
