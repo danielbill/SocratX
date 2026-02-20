@@ -32,8 +32,8 @@ class SocratXLogger:
 
     def _setup_loggers(self):
         """设置三个日志通道"""
-        # 日志目录
-        log_dir = Path(__file__).parent.parent / "logs"
+        # 日志目录 - 根目录 logs/
+        log_dir = Path(__file__).parent.parent.parent / "logs"
         log_dir.mkdir(exist_ok=True)
 
         # 通用格式

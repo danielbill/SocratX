@@ -18,7 +18,7 @@ class TestConfig:
         """Test default config"""
         config = Config()
 
-        assert config.agents.defaults.model == "anthropic/claude-opus-4-5"
+        assert config.agents.defaults.model == "zai/glm-4.7"
         assert config.agents.defaults.temperature == 0.7
         assert config.agents.defaults.max_tokens == 8192
 
@@ -53,24 +53,13 @@ class TestConfig:
 
         assert config.get_api_key("openai/gpt-4") == "sk-test-key"
 
-    def test_get_api_key_fallback(self):
-        """Test API key fallback"""
-        config = Config(
-            providers=ProvidersConfig(
-                zhipu=ProviderConfig(api_key="zhipu-key-123"),
-            )
-        )
-
-        key = config.get_api_key()
-        assert key == "zhipu-key-123"
-
 
 class TestLoadConfig:
     """load_config tests"""
 
     def test_load_config_default(self, tmp_path, monkeypatch):
         """Test default load config"""
-        config_dir = tmp_path / ".nanobot"
+        config_dir = tmp_path / ".socratx"
         config_dir.mkdir(parents=True)
         config_file = config_dir / "config.json"
         
@@ -86,7 +75,7 @@ class TestLoadConfig:
 
     def test_load_config_from_file(self, tmp_path, monkeypatch):
         """Test load config from file"""
-        config_dir = tmp_path / ".nanobot"
+        config_dir = tmp_path / ".socratx"
         config_dir.mkdir(parents=True)
         config_file = config_dir / "config.json"
         
@@ -98,8 +87,8 @@ class TestLoadConfig:
                 }
             },
             "providers": {
-                "zhipu": {
-                    "apiKey": "test-zhipu-key"
+                "zai": {
+                    "apiKey": "test-zai-key"
                 }
             }
         }
@@ -116,17 +105,17 @@ class TestLoadConfig:
 
         assert config.agents.defaults.model == "zai/glm-4.7"
         assert config.agents.defaults.temperature == 0.8
-        assert config.providers.zhipu.api_key == "test-zhipu-key"
+        assert config.providers.zai.api_key == "test-zai-key"
 
     def test_load_config_from_env(self, monkeypatch):
         """Test load config from env"""
-        monkeypatch.setenv("NANOBOT_AGENTS__DEFAULTS__MODEL", "zai/glm-4.7")
-        monkeypatch.setenv("NANOBOT_AGENTS__DEFAULTS__TEMPERATURE", "0.9")
-        monkeypatch.setenv("NANOBOT_PROVIDERS__OPENAI__API_KEY", "sk-env-key")
+        monkeypatch.setenv("SOCRATX_AGENTS__DEFAULTS__MODEL", "anthropic/claude-3-5-sonnet")
+        monkeypatch.setenv("SOCRATX_AGENTS__DEFAULTS__TEMPERATURE", "0.9")
+        monkeypatch.setenv("SOCRATX_PROVIDERS__OPENAI__API_KEY", "sk-env-key")
 
         config = Config()
 
-        assert config.agents.defaults.model == "zai/glm-4.7"
+        assert config.agents.defaults.model == "anthropic/claude-3-5-sonnet"
         assert config.agents.defaults.temperature == 0.9
         assert config.providers.openai.api_key == "sk-env-key"
 
@@ -136,7 +125,7 @@ class TestSaveConfig:
 
     def test_save_config(self, tmp_path, monkeypatch):
         """Test save config"""
-        config_dir = tmp_path / ".nanobot"
+        config_dir = tmp_path / ".socratx"
         config_dir.mkdir(parents=True)
         config_file = config_dir / "config.json"
         

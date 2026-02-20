@@ -20,42 +20,16 @@ import json
 
 # 导入内部模块
 from agent.loop import AgentLoop, AgentConfig, create_agent_loop
-from agent.session import SessionManager
+from session.manager import SessionManager
 from agent.memory import MemoryStore
 from agent.tools.registry import create_default_registry
 from providers.litellm_provider import create_provider
 from config.loader import init_config
-from config.schema import SocratXConfig
-from bus.events import InboundMessage, OutboundMessage, MessageType
+from config.schema import Config
 from bus.queue import get_message_bus
 
 # 导入统一日志系统
 from utils.logger import logger
-
-# 配置 AI 日志 handler
-def _setup_ai_logger():
-    """配置 AI 日志记录器"""
-    ai_logger = logging.getLogger("socratx.ai")
-    ai_logger.setLevel(logging.DEBUG)
-    ai_logger.propagate = False
-    
-    # 清除现有 handler
-    ai_logger.handlers.clear()
-    
-    # 日志文件
-    log_dir = Path(__file__).parent / "logs"
-    log_dir.mkdir(exist_ok=True)
-    
-    # AI 日志 handler
-    ai_format = logging.Formatter(
-        "[%(asctime)s] %(levelname)s %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-    ai_handler = logging.FileHandler(log_dir / "ai.log", encoding="utf-8")
-    ai_handler.setFormatter(ai_format)
-    ai_logger.addHandler(ai_handler)
-
-_setup_ai_logger()
 
 
 # ===== 请求/响应模型 =====
@@ -121,26 +95,7 @@ class HealthResponse(BaseModel):
 _agent_loop: Optional[AgentLoop] = None
 _session_manager: Optional[SessionManager] = None
 _memory_store: Optional[MemoryStore] = None
-_config: Optional[SocratXConfig] = None
-
-
-def _parse_tool_arguments(arguments: Any) -> dict:
-    """
-    解析工具调用参数
-
-    arguments 应该已经是 dict（由 litellm_provider._parse_response 处理）
-    但为了保险，做类型检查
-    """
-    if isinstance(arguments, dict):
-        return arguments
-    # 如果不是 dict，尝试用 json_repair 解析
-    if isinstance(arguments, str):
-        try:
-            import json_repair
-            return json_repair.loads(arguments)
-        except:
-            pass
-    return {}
+_config: Optional[Config] = None
 
 
 @asynccontextmanager
@@ -152,48 +107,28 @@ async def lifespan(app: FastAPI):
 
     # 初始化配置
     _config = init_config()
-    logger.system(f"Config loaded: {_config.agent.model}")
+    logger.system(f"Config loaded: {_config.agents.defaults.model}")
 
     # 初始化组件
-    _session_manager = SessionManager()
-    _memory_store = MemoryStore(_config.agent.workspace)
+    _session_manager = SessionManager(_config.workspace_path)
+    _memory_store = MemoryStore(_config.workspace_path)
 
     # 创建工具注册表
     tool_registry = await create_default_registry()
     logger.system(f"Tool registry initialized with {len(tool_registry.list_tools())} tools")
 
     # 创建 LLM 提供商
-    # 从配置中获取提供商 - 使用关键词匹配（参考 nanobot）
-    model_name = _config.agent.model
-    model_lower = model_name.lower()
+    model_name = _config.agents.defaults.model
+    provider_name = _config.get_provider_name(model_name)
+    p = _config.get_provider(model_name)
     
-    # 从 providers registry 获取关键词匹配
-    from providers.registry import PROVIDERS
-    
-    provider_config = None
-    provider_name = None
-    
-    for spec in PROVIDERS:
-        p = getattr(_config.providers, spec.name, None)
-        if p and p.api_key and any(kw in model_lower for kw in spec.keywords):
-            provider_config = p
-            provider_name = spec.name
-            break
-    
-    # 如果没有匹配，尝试从模型前缀获取
-    if not provider_config:
-        prefix = model_name.split("/")[0] if "/" in model_name else "openai"
-        if hasattr(_config.providers, prefix):
-            provider_config = getattr(_config.providers, prefix)
-            provider_name = prefix
-    
-    api_key = provider_config.api_key if provider_config else None
-    api_base = provider_config.api_base if provider_config else None
-    
+    api_key = p.api_key if p else None
+    api_base = _config.get_api_base(model_name) if p else None
+
     logger.system(f"Creating LLM provider: {provider_name or 'unknown'} for model {model_name}")
     logger.system(f"API Key: {'***' if api_key else 'None'}")
     logger.system(f"API Base: {api_base if api_base else 'None'}")
-    
+
     llm_provider = await create_provider(
         model=model_name,
         api_key=api_key,
@@ -201,15 +136,14 @@ async def lifespan(app: FastAPI):
     )
 
     # 创建 AgentLoop
-    from agent.loop import AgentLoop
     _agent_loop = AgentLoop(
         config=AgentConfig(
-            model=_config.agent.model,
-            temperature=_config.agent.temperature,
-            max_tokens=_config.agent.max_tokens,
-            max_iterations=_config.agent.max_iterations,
-            workspace=_config.agent.workspace,
-            memory_enabled=_config.agent.memory_enabled,
+            model=model_name,
+            temperature=_config.agents.defaults.temperature,
+            max_tokens=_config.agents.defaults.max_tokens,
+            max_iterations=_config.agents.defaults.max_tool_iterations,
+            workspace=_config.workspace_path,
+            memory_enabled=_config.agents.memory_enabled,
         ),
         session_manager=_session_manager,
         memory_store=_memory_store,
@@ -286,8 +220,6 @@ async def health_check():
 async def chat(request: ChatRequest) -> ChatResponse:
     """
     处理对话请求
-
-    这是主要的 API 端点，处理用户消息并返回 AI 响应
     """
     if _agent_loop is None:
         raise HTTPException(
@@ -296,21 +228,18 @@ async def chat(request: ChatRequest) -> ChatResponse:
         )
 
     try:
-        # 记录用户输入
         logger.conversation(
             session_id=request.session_id,
             role="USER",
             content=request.message,
         )
 
-        # 使用 AgentLoop 处理消息
         response = await _agent_loop.run(
             message=request.message,
             session_id=request.session_id,
             user_id=request.user_id,
         )
 
-        # 记录 AI 响应
         logger.conversation(
             session_id=request.session_id,
             role="AI",
@@ -320,7 +249,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
         return ChatResponse(
             content=response.content or "",
             session_id=request.session_id,
-            model=_config.agent.model if _config else "unknown",
+            model=_config.agents.defaults.model if _config else "unknown",
             tool_calls=[
                 ToolCall(
                     id=tc.get("id", ""),
@@ -424,19 +353,6 @@ async def update_memory(request: MemoryRequest):
     return {"updated": True}
 
 
-@app.get("/api/memory/search", tags=["Memory"])
-async def search_memory(query: str, limit: int = 10):
-    """搜索记忆"""
-    if _memory_store is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Memory store not initialized",
-        )
-
-    results = await _memory_store.search_history(query, limit)
-    return {"results": results}
-
-
 @app.get("/api/config", response_model=ConfigResponse, tags=["Config"])
 async def get_config():
     """获取当前配置"""
@@ -491,7 +407,6 @@ async def get_stats():
 if __name__ == "__main__":
     import uvicorn
 
-    # 从环境变量或配置读取端口
     port = 8000
 
     uvicorn.run(
