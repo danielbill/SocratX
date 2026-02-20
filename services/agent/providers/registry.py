@@ -101,10 +101,17 @@ PROVIDERS: list[ProviderSpec] = [
     ),
     ProviderSpec(
         name="zhipu",
-        display_name="智谱 AI",
-        keywords=["glm", "zhipu", "chatglm"],
+        display_name="智谱 AI (旧版)",
+        keywords=["zhipu", "chatglm"],  # 移除 glm，避免与 zai 冲突
         env_key="ZHIPUAI_API_KEY",
         litellm_prefix="zhipu/",
+    ),
+    ProviderSpec(
+        name="zai",
+        display_name="Z.ai (智谱 AI)",
+        keywords=["glm", "zai", "z.ai"],
+        env_key="ZAI_API_KEY",
+        litellm_prefix="zai/",
     ),
     ProviderSpec(
         name="dashscope",
